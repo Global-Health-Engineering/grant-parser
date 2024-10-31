@@ -1,0 +1,84 @@
+name: grant_parser
+run-name: grant_parser is parsing
+
+on: 
+  push:
+    branches:
+      - main
+  schedule:
+    - cron: '30 5 * * 2'  # Every Tuesday at 5:30 AM
+
+jobs:
+  update_list_of_grantscreate_an_issue:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write  # Required for pushing CSV results to the repository
+      issues: write  
+    steps:
+      - name: Check out repository with full history
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12.4'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Ensure browsers are installed
+        run: python -m playwright install --with-deps
+
+      - name: Run parsing scripts individually
+        run: |
+          for script in $(ls source_scripts/*.py); do
+            python $script || exit 1
+          done
+      
+      - name: Combine individual result files
+        run: |
+          python combine_results.py 
+
+      - name: Commit and Push CSV results
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git add results/*.csv
+          git commit -m "Add parsing results for $(date +'%Y-%m-%d')"
+          git push
+  # create_an_issue:
+  #   name: Create an issue for the updated list
+  #   runs-on: ubuntu-latest
+  #   steps:
+      - name: notify assignees that new list is generated
+        run: |
+          if [[ $CLOSE_PREVIOUS == true ]]; then
+            previous_issue_number=$(gh issue list \
+              --label "$LABELS" \
+              --json number \
+              --jq '.[0].number')
+            if [[ -n $previous_issue_number ]]; then
+              gh issue close "$previous_issue_number"
+              gh issue unpin "$previous_issue_number"
+            fi
+          fi
+          new_issue_url=$(gh issue create \
+            --title "$TITLE" \
+            --assignee "$ASSIGNEES" \
+            --label "$LABELS" \
+            --body "$BODY")
+          if [[ $PINNED == true ]]; then
+            gh issue pin "$new_issue_url"
+          fi
+        env:
+          TITLE: Grant sources parsed
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Use the built-in token
+          ASSIGNEES: ${{ github.actor }},jaktk
+          LABELS: New grants list
+          BODY: ""
+          PINNED: false
+          CLOSE_PREVIOUS: false
+
+      
