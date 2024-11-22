@@ -49,7 +49,7 @@ async def async_parse(headless_run=True):#playwright: Playwright):
         print("handle_block_window triggered")
 
         try:
-            if await page.get_by_label("Please do not show again").count(timeout = 1000):
+            if await page.get_by_label("Please do not show again").count():
                 await page.get_by_label("Please do not show again").check()
                 await page.get_by_label("Welcome to the EU Funding &").get_by_role("button", name="eUI Icon").click()
             else:
