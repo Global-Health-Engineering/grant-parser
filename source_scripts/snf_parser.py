@@ -1,24 +1,26 @@
 
 from playwright.sync_api import sync_playwright
+from datetime import datetime
+from zoneinfo import ZoneInfo
 from urllib.parse import urlparse
 import argparse
 from pathlib import Path
 import csv
 import os
 
-def sync_parse(headless_run=True):
 
+def sync_parse(headless_run=True):
     playwright = sync_playwright().start()
     browser = playwright.chromium.launch(headless=headless_run)
     url_link = "https://www.snf.ch/en/LlLsqrrZVo4EqWui/page/open-calls"
     page = browser.new_page()
     page.goto(url_link)
     o = urlparse(url_link)
-    # for j in range(page.locator("div.grid-margin section.block-overview").count()):
-    # articles = page.locator("div.grid-margin section.block-overview").locator(f"nth={j}").get_by_role("article")
+
     articles = page.locator("div.grid-margin section.block-overview").locator(f"nth=0").get_by_role("article")
     articles_count=articles.count()
     parsed_results = []
+
     for i in range(articles_count):
         topic = articles.locator("a.topic-teaser__link").locator(f"nth={i}")
         href = topic.get_attribute("href")
@@ -27,12 +29,17 @@ def sync_parse(headless_run=True):
         else:
             link = o.hostname + href
         title = topic.locator("div.topic-teaser__content").get_by_role("heading").all_text_contents()
-        deadline = topic.locator("div.topic-teaser__content").get_by_role("paragraph").all_text_contents()
-        # print(f"\n\ntitle: {title}\nlink:{link},\ndeadline: {deadline} ")
+        # deadline = topic.locator("div.topic-teaser__content").get_by_role("paragraph").all_text_contents()
+        deadline_element = topic.get_by_text("Submission deadline:")
+        deadline_text = deadline_element.text_content()
+        deadline = deadline_text.split("Submission deadline:")[1].strip()
+        deadline = datetime.strptime(deadline, "%d.%m.%Y %H:%M %Z")
+        deadline = deadline.replace(tzinfo=ZoneInfo("CET")).date()
+        
         parsed_results.append({
             "title":" ".join(title),
             "link": link,
-            "deadline": " ".join(deadline)
+            "deadline": str(deadline)
         })
     print("DONE")
 
@@ -59,6 +66,7 @@ def save_results_to_csv(output_file_path, results):
             writer.writerow(row)
 
     print(f"Results saved to {csv_file}")
+
 
 def main():
     parser = argparse.ArgumentParser()
@@ -87,8 +95,6 @@ def main():
     save_results_to_csv(output_file_path, parsed_results)
     
 
-
 if __name__=="__main__":
     main()
-
     
