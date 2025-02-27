@@ -144,7 +144,10 @@ def main():
         output_file_name="Research_Professionals" + ".csv"
 
     output_file_path = output_dir.joinpath(output_file_name)
-    parsed_results = sync_parse()
+    for i in range(50):
+        parsed_results = sync_parse()
+        if parsed_results:
+            break
     save_results_to_csv(output_file_path, parsed_results)
     
 

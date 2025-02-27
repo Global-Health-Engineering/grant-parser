@@ -39,7 +39,11 @@ jobs:
       
       - name: Combine individual result files
         run: |
-          python combine_results.py 
+          python combine_results.py
+
+      - name: Sort results
+        run: |
+          python sort_results.py
 
       - name: Commit and Push CSV results
         run: |
