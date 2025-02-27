@@ -6,7 +6,7 @@ on:
     branches:
       - main
   schedule:
-    - cron: '30 5 * * 2'  # Every Tuesday at 5:30 AM
+    - cron: '30 22 * * 0' # Every Sunday at 22:30
 
 jobs:
   update_list_of_grantscreate_an_issue:
