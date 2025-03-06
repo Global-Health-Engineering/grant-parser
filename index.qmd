@@ -18,8 +18,8 @@ months <- c("January", "February", "March", "April", "May", "June", "July", "Aug
 
 
 grants <- read_csv("results/combined_results_sorted.csv") |> 
-  mutate(deadline_year = as.numeric(str_extract(deadline, "\\d{4}")),
-         deadline_month = str_extract(deadline, paste(months, collapse = "|")),
+  mutate(deadline_year = as.numeric(str_extract(date, "\\d{4}")),
+         deadline_month = str_extract(date, paste(months, collapse = "|")),
          deadline_month_numeric = month(parse_date_time(deadline_month, "b"))
          ) |> 
   arrange(deadline_month_numeric) |> 
