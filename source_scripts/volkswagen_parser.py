@@ -117,13 +117,9 @@ def main():
         output_file_name="Volkswagen" + ".csv"
 
     output_file_path = output_dir.joinpath(output_file_name)
-    for i in range(50):
-        parsed_results = sync_parse()
-        if parsed_results:
-            break
+    parsed_results = sync_parse()
     save_results_to_csv(output_file_path, parsed_results)
     
-
 
 if __name__=="__main__":
     main()
