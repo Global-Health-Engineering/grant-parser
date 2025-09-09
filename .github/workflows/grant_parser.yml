@@ -1,0 +1,77 @@
+name: Grant Parser
+run-name: Parsing grant sources
+
+on: 
+  workflow_dispatch: # Allow manual triggering
+  push:
+    branches:
+      - main
+  schedule:
+    - cron: '0 12 * * 0' # Every Sunday at 12:00 UTC
+
+jobs:
+  parse_grants:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write  # Required for pushing CSV results to the repository
+      issues: write  
+    steps:
+      - name: Check out repository with full history
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12.4'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Ensure browsers are installed
+        run: python -m playwright install --with-deps
+
+      - name: Run parsing scripts individually
+        run: |
+          for script in source_scripts/*.py; do
+            echo "Running $script..."
+            python "$script" || echo "$script failed, continuing..."
+          done
+      
+      - name: Combine individual result files
+        run: |
+          python combine_results.py
+
+      - name: Sort results
+        run: |
+          python sort_results.py
+
+      - name: Commit and Push CSV results
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git add results/*.csv
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "Update grant parsing results for $(date +'%Y-%m-%d')"
+            git push
+          fi
+      - name: Create issue notification
+        if: success()
+        run: |
+          # Close previous issue with same label if exists
+          previous_issue=$(gh issue list --label "grants-update" --state open --json number --jq '.[0].number')
+          if [[ -n "$previous_issue" ]]; then
+            gh issue close "$previous_issue"
+          fi
+          
+          # Create new issue
+          gh issue create \
+            --title "Grant sources parsed - $(date +'%Y-%m-%d')" \
+            --assignee "jaktk" \
+            --label "grants-update" \
+            --body "New grant parsing results have been generated and committed to the repository. Check the results folder for the latest CSV files."
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

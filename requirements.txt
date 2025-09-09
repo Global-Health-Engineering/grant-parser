@@ -1,11 +1,13 @@
-asyncfile==1.0.0
-asyncio==3.4.3
 greenlet==3.0.3
 playwright==1.45.1
-importlib==1.0.4
 pyee==11.1.0
 tqdm==4.66.5
 typing_extensions==4.12.2
 pandas==2.0.2
 numpy==1.24.3
 datefinder==0.7.3
+beautifulsoup4==4.12.3
+requests==2.31.0
+lxml==5.1.0
+aiofiles==23.2.1
+tzdata==2025.2
